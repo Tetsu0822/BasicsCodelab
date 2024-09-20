@@ -4,6 +4,9 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -19,7 +22,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -42,8 +44,17 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun Greeting(name: String, modifier: Modifier = Modifier) {
-    var expended = rememberSaveable { mutableStateOf(false) }
-    var extraPadding = if (expended.value) 48.dp else 0.dp
+    var expanded by rememberSaveable { mutableStateOf(false) }
+    //使用 animatieDpAsState 建立的動畫可以中斷，
+    // 值有所改變就會重新播放動畫並指向新的值，使動畫更自然
+    val extraPadding by animateDpAsState(
+        if (expanded) 48.dp else 0.dp,
+        //自訂動畫內容
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessLow
+        )
+    )
     Surface(
         color = MaterialTheme.colorScheme.primary,
         modifier = modifier.padding(vertical = 4.dp, horizontal = 8.dp)
@@ -52,15 +63,16 @@ fun Greeting(name: String, modifier: Modifier = Modifier) {
             Column(
                 modifier = Modifier
                     .weight(1f)
-                    .padding(bottom = extraPadding)
+                    //確保邊框間距永遠不會變成負值
+                    .padding(bottom = extraPadding.coerceAtLeast(0.dp))
             ) {
                 Text(text = "Hello: ")
                 Text(text = name)
             }
             ElevatedButton(
-                onClick = { expended.value = !expended.value}
+                onClick = { expanded = !expanded}
             ) {
-                Text(if (expended.value) "Show less" else "Show more")
+                Text(if (expanded) "Show less" else "Show more")
             }
         }
     }
@@ -99,13 +111,6 @@ fun GreetingsPreview() {
     }
 }
 
-//@Preview(showBackground = true, widthDp = 320)
-//@Composable
-//fun GreetingPreview() {
-//    BasicsCodelabTheme {
-//        MyApp()
-//    }
-//}
 @Preview
 @Composable
 fun MyAppPreview() {
@@ -120,7 +125,7 @@ fun OnboardingScreen(
     modifier: Modifier = Modifier
 ) {
     // TODO: This state should be hoisted
-    var shouldShowOnboarding by remember { mutableStateOf(true) }
+    //var shouldShowOnboarding by remember { mutableStateOf(true) }
 
     Column(
         modifier = modifier.fillMaxSize(),
